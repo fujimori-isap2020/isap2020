@@ -68,6 +68,11 @@ def dbm_to_v(power_dbm, impedance):
     return voltage
 
 
+def v_to_dbm(voltage, impedance):
+    dbuv = 20 * np.log10(voltage) + 120
+    dbm = dbuv - 10 * np.log10(impedance) - 90
+    return dbm
+
 def calc_two_antennas(x1, y1, x2, y2, phase_diff):
     power_tx = 10
     gain_tx = 0
@@ -103,8 +108,11 @@ def calc_two_antennas(x1, y1, x2, y2, phase_diff):
 def plotter(test):
     import matplotlib.pyplot as plt
     for i in range(10):
-        plt.plot(abs(test[i]), label=f'{i}')
-    plt.title('ant1=(0, 0.0-0.1), ant2=(1.2, 1.5)')
+        plt.plot([0, 0.5, 1, 1.5, 2, 2.5, 3], v_to_dbm(abs(test[i]), 50), label=f'ant1.y={i*0.1}')
+    plt.title('ant1=(0, 0.0-0.1), ant2=(1.2, 1.5) [m]')
+    plt.ylabel('rx power [dBm]')
+    plt.xlabel('mesurement point x [m], (y=0 [m])')
+    plt.grid()
     plt.legend()
     plt.show()
 
