@@ -7,7 +7,10 @@
 import numpy as np
 import pandas as pd
 from math import atan2
-
+from tqdm import tqdm
+import pickle
+import sys
+import h5py
 
 class Antenna(object):
     def __init__(self, x, y, freq, power, orientation, phase_offset):
@@ -91,7 +94,7 @@ def calc_two_antennas(x1, y1, x2, y2, phase_diff):
         distances = ant.get_distance_by_points(rx_ants)
         # 距離を使って受信点での位相の計算．
         phases = ant.get_phase_from_distance(distances)
-        print(max(phases/(2*np.pi)*360), min(phases/(2*np.pi)*360))
+        #print(max(phases/(2*np.pi)*360), min(phases/(2*np.pi)*360))
         # フリスの公式を使って受信点でのパワーを計算．
         power_rxs = received_power_by_friis(ant.power, ant.gain, gain_rx, distances, ant.lambda_0)
         # 振幅に変換
@@ -118,13 +121,24 @@ def plotter(test):
 
 
 if __name__ == '__main__':
-    test = list()
-    for x1 in range(0, 300, 10):
-        for y1 in range(0, 300, 10):
-            test.append(calc_two_antennas(x1/100, y1/100, 1.2, 1.5, 0))
-
+    deg_start = sys.argv[1]
+    deg_stop = sys.argv[2]
+    print(f'processing {deg_start} from {deg_stop}')
+    for deg in tqdm(range(int(deg_start), int(deg_stop), 1)): 
+        rxpower = list()
+        for x1 in tqdm(range(0, 300, 10)):
+            for y1 in range(0, 300, 10):
+                for x2 in range(0, 300, 10):
+                    for y2 in range(0, 300, 10):
+                        rxpower.append(calc_two_antennas(x1/100, y1/100, x2/100, x2/100, deg/360*np.pi*2))
+        result = np.asarray(rxpower)
+        with h5py.File(f'deg{deg}.hdf5', mode='w') as f:
+            f.create_dataset(name='rxpowers', data=result)
+    
+    
+    #print(test)
     #print(abs(np.array(test)))
-    plotter(test)
+    #plotter(test)
 
 
 
