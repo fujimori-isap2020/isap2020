@@ -7,6 +7,8 @@
 import numpy as np
 import pandas as pd
 from math import atan2
+import matplotlib.pyplot as plt
+
 from tqdm import tqdm
 import pickle
 import sys
@@ -109,7 +111,18 @@ def calc_two_antennas(x1, y1, x2, y2, phase_diff):
 
 
 def plotter(test):
-    import matplotlib.pyplot as plt
+    plt.figure(dpi=200, figsize=(5, 5))
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.rcParams['xtick.major.width'] = 1.2
+    plt.rcParams['ytick.major.width'] = 1.2
+    plt.rcParams['axes.linewidth'] = 1.2
+    plt.rcParams['axes.grid'] = True
+    plt.rcParams['grid.linestyle'] = '--'
+    plt.rcParams['grid.linewidth'] = 0.3
+    plt.rcParams["legend.markerscale"] = 2
+    plt.rcParams["legend.fancybox"] = False
+    plt.rcParams["legend.edgecolor"] = 'black'
     for i in range(10):
         plt.plot([0, 0.5, 1, 1.5, 2, 2.5, 3], v_to_dbm(abs(test[i]), 50), label=f'ant1.y={i*0.1}')
     plt.title('ant1=(0, 0.0-0.1), ant2=(1.2, 1.5) [m]')
@@ -124,7 +137,7 @@ if __name__ == '__main__':
     deg_start = sys.argv[1]
     deg_stop = sys.argv[2]
     print(f'processing {deg_start} from {deg_stop}')
-    for deg in tqdm(range(int(deg_start), int(deg_stop), 1)): 
+    for deg in tqdm(range(int(deg_start), int(deg_stop), 1)):
         rxpower = list()
         for x1 in tqdm(range(0, 300, 10)):
             for y1 in range(0, 300, 10):
@@ -134,8 +147,8 @@ if __name__ == '__main__':
         result = np.asarray(rxpower)
         with h5py.File(f'deg{deg}.hdf5', mode='w') as f:
             f.create_dataset(name='rxpowers', data=result)
-    
-    
+
+
     #print(test)
     #print(abs(np.array(test)))
     #plotter(test)
