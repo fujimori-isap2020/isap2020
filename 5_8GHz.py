@@ -130,7 +130,7 @@ if __name__ == '__main__':
             for y1 in range(0, 300, 10):
                 for x2 in range(0, 300, 10):
                     for y2 in range(0, 300, 10):
-                        rxpower.append(calc_two_antennas(x1/100, y1/100, x2/100, x2/100, deg/360*np.pi*2))
+                        rxpower.append(calc_two_antennas(x1/100, y1/100, x2/100, y2/100, deg/360*np.pi*2))
         result = np.asarray(rxpower)
         with h5py.File(f'deg{deg}.hdf5', mode='w') as f:
             f.create_dataset(name='rxpowers', data=result)
