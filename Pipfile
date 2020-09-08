@@ -11,6 +11,8 @@ pandas = "*"
 matplotlib = "*"
 tqdm = "*"
 h5py = "*"
+keras = "*"
+tensorflow = "*"
 
 [requires]
 python_version = "3.7"

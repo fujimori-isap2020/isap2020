@@ -37,17 +37,6 @@ class Antennas(object):
         # returns (900)
         return 1
 
-    def get_distance_from(self, ants):
-        # returns (900)
-        # xとyそれぞれの距離の差を7x30の行列にいれる by kobayashi
-        x_diff = ants[:, 0].reshape(7, 1) - self.x_axis.reshape(1, 30)
-        y_diff = ants[:, 1].reshape(7, 1) - self.y_axis.reshape(1, 30)
-        # xとyで向きが違う分を，新しい要素を追加するときに考慮
-        x_diff = x_diff[:, :, np.newaxis]
-        y_diff = y_diff[:, np.newaxis, :]
-        # 単位はmで返す．
-        return np.sqrt(x_diff**2 + y_diff**2) / 100
-
     def get_distance_by_points(self, points):
         # returns (900, 7)
         # xとyそれぞれの距離の差を7x30の行列にいれる by kobayashi
@@ -63,12 +52,6 @@ class Antennas(object):
     def get_phase_from_distance(self, distance):
         # returns (900, 7)
         return (distance % self.lambda_0) / self.lambda_0 * (2 * np.pi) + self.phase_offset
-
-    def get_phase_by_ants(self, ants):
-        # returns (900, ants)
-        distances = self.get_distance_from(ants)
-        phases = self.get_phase_from_distance(distances)
-        return phases
 
 
 def received_power_by_friis(power_tx, gain_tx, gain_rx, distance, lambda_0):
@@ -140,29 +123,28 @@ def calc_two_antennas_vector(phase_diff):
         # フリスの公式を使って受信点でのパワーを計算．
         # 距離を使って受信点での位相の計算．(power_rxs.shape = (900, 7))
         power_rxs = received_power_by_friis(ant.power, ant.gain, gain_rx, distances, ant.lambda_0)
-        print(f'power_rxs.shape: {power_rxs.shape}')
         # 振幅に変換 (power_rxs.shape = (900, 7))
         amp_rxs = dbm_to_v(power_rxs, 50)
-        print(f'amp_rxs.shape: {power_rxs.shape}')
         # 振幅と位相から複素信号を計算 (power_rxs.shape= (900, 7))
         complex_signal = np.sqrt(amp_rxs) * np.exp(1j * phases)
         complex_signals.append(complex_signal)
 
     # complex_signals.shape -> (2, 7, 900)
     complex_signals = np.array(complex_signals)
-    print(f'comprex_signals.shape: {complex_signals.shape}')
     # 受信アンテナごとに重ね合わせ (complex_signals[0] ? complex_signals[1]).shape -> (810000, 7)
-    #sum_signals = np.sum(complex_signals, 0)
     sum_signals_for_each_rx = complex_signals[0][:, :, None] + complex_signals[1][:, None, :]
     return sum_signals_for_each_rx
+
 
 if __name__ == '__main__':
     deg_start = sys.argv[1]
     deg_stop = sys.argv[2]
     print(f'processing {deg_start} from {deg_stop}')
     for deg in tqdm(range(int(deg_start), int(deg_stop), 1)):
-        print(calc_two_antennas_vector(deg).shape)
-
+        result = calc_two_antennas_vector(deg)
+        with h5py.File(f'dataset_tmp/degree{deg}.hdf5', mode='w') as f:
+            f.create_dataset(name='rxpowers', data=result)  # resultがcomplex型なので予想の2倍？
+            # データが大きくなると予想されるので，forを出てから最後のデータだけを保存
 
 
 
