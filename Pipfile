@@ -9,6 +9,8 @@ verify_ssl = true
 numpy = "*"
 pandas = "*"
 matplotlib = "*"
+tqdm = "*"
+h5py = "*"
 
 [requires]
 python_version = "3.7"
