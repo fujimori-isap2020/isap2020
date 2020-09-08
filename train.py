@@ -36,6 +36,13 @@ def train():
     print(val_loss, val_acc)
 
 
+def PrintAllObjects(name):
+    print(name)
+
+
+#def generate_label_from_index(index):
+
+
 def read_dataset():
     each_dataset_name = list()
     path = pathlib.Path(const.dataset_dir)
@@ -44,12 +51,22 @@ def read_dataset():
         if match:
             each_dataset_name.append(int(match.group(1)))
 
-    with h5py.File('degree0.hdf5', 'r') as f:
-        for k in f:
-            print(k)
-    print('hello!')
+    dataset = ''
+    with h5py.File('dataset_tmp/degree1.hdf5', 'r') as f:
+        dataset = f.get('rxpowers').value
+
+    dataset = dataset.reshape(7, 30, 30, 30, 30)
+    x1, y1, x2, y2 = 1,1,1,1,
+
+    slice = dataset[:, x1, y1, x2, y2]
+    print(slice)
     return each_dataset_name
 
+
+def index():
+    x1_grid = np.arange(0, 30, 1).reshape(30,1)
+    x2_grid = np.arange(0, 30, 1).reshape(1,30)
+    x1_grid + x2_grid
 
 def main():
     print(read_dataset())
