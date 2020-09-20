@@ -31,5 +31,7 @@ for i in range(900):
     result[2,i,:] = x2
     result[3,i,:] = y2
     
-with h5py.File(f'positions.hdf5', mode='w') as f:
-    f.create_dataset(name='position', data=result)  #resultがcomplex型なので予想の2倍？
+#with h5py.File(f'positions.hdf5', mode='w') as f:
+#    f.create_dataset(name='position', data=result)  #resultがcomplex型なので予想の2倍？
+
+np.save('positions.npy', result)
