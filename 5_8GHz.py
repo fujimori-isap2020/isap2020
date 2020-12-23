@@ -2,91 +2,67 @@
 # transmitter A: 300-320MHz, -50dBm, lambda/2 dipole, horizontal, 1-3antennas, CW
 # transmitter B: 2.402-2.480GHz, 0dBm, Small antenna, unknown pole, 1-3antennas, ble beacon
 # transmitter C: 5.012-5.025GHz, 10dBm, Monopole antenna, Vertical, 1-2, CW
+# Powered by Fujimori-Lab Members (Akada, Kobayashi, Maruyama) in September 2020
 #
+# ---- Memo ----
+# 20201118: classで距離を測定するやつを作っていたが遅くなりそうなので関数にした
+#           見た目より高速化を優先する
+# 20201202  速度よりとりあえずclassで作ることに
+# 20201222  送信・受信ともにダイポールアンテナの指向性を持つこと前提で演算
+#           送信アンテナの方向は0[deg]で固定，高さも固定（100[cm]）
+#           ダイポールアンテナはλ/2の周波数で入力すること（指向性をそれで決めてる）
+#           定数類は全部const.pyに入っている
+#           水平偏波（TM波）前提
+#           全部ndarrayにブチ込んでcupyで高速処理よ
+# 20201223  メイン関数は小さく
 
-import numpy as np
-import pandas as pd
-from math import atan2
+
+import cupy as cp
 import matplotlib.pyplot as plt
-
 from tqdm import tqdm
-import pickle
 import sys
-import h5py
-
-import configparser
 
 # self-made function
 from propagation import raytrace as rt
 import const
 
-
-class Antennas(object):
-
-    def __init__(self, x, y, z, freq, power, orientation, phase_offset):
-        self.x_position = x         # array of 30 : range(0, 300, 10)  [cm]
-        self.y_position = y         # array of 30 : range(0, 300, 10)  [cm]
-        self.y_position = z         # array of 30 : range(0, 300, 10)  [cm]
-        self.freq = freq
-        self.power = power
-        self.orientation = orientation
-        self.lambda_0 = const.c / freq
-        self.phase_offset = phase_offset
-
-        # todo
-        self.gain = const.tx_gain
+# Unified Memoryを使う
+pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+cp.cuda.set_allocator(pool.malloc)
 
 
-def calc_two_antennas_vector(phase_diff):
-    x1_grid = np.linspace(const.x_start, const.x_range, const.x_num)
-    y1_grid = np.linspace(const.y_start, const.y_range, const.y_num)
-    x2_grid = np.linspace(const.x_start, const.x_range, const.x_num)
-    y2_grid = np.linspace(const.y_start, const.y_range, const.y_num)
+def calc_antennas_vector(phase_diff):
 
-    # 受信側はダイポールで設定？？
-    # Antennasはx,yのgridに対してとりうる全ての点を保持する．
-    ant1 = Antennas(x1_grid, y1_grid, const.freq,
-                    const.tx_power, const.orientation, const.phase_of_origin)
-    ant2 = Antennas(x2_grid, y2_grid, const.freq, const.tx_power,
-                    const.orientation, phase_diff)
-    tx_ants = [ant1, ant2]
+    # 送信アンテナのインスタンス作成
+    # txはx,yのgridに対してとりうる点をすべて保持する．（30x30)
+    # アンテナの高さと方向は固定
+    # TM波（水平偏波）
+    tx_ant1 = rt.TX(const.x1_grid, const.y1_grid, const.tx_antenna_hight,
+                    const.freq, const.tx_power, const.tx_orientation,
+                    const.phase_of_origin)
+    tx_ant2 = rt.TX(const.x2_grid, const.y2_grid, const.tx_antenna_hight,
+                    const.freq, const.tx_power, const.tx_orientation, (phase_diff/180)*2*cp.pi)
 
-    gain_rx = const.rx_gain
+    # 受信アンテナのインスタンス作成
+    # rxもx,yのgridに対して取りうる点をすべて保持する（今回は7点のみx:0,50...,y:100）
+    # アンテナの高さと方向は固定
+    rx_ants = rt.RX(const.rx_ants_x_position, const.rx_ants_y_position,
+                    const.rx_antenna_hight, const.freq, const.gain,
+                    const.rx_orientation, const.phase_of_origin)
 
-    # 受信アンテナの位置
-    # Todo : Antennasクラスを使って作りたいが，get_distance_by_pointsと密接につながっているため，そこと同時に編集する必要がある．
-    # x軸の位置
-    rx_ants_x_position = np.linspace(
-        const.point_of_origin, const.x_range, const.rx_antenna_num)
-    # y軸の位置
-    rx_ants_y_position = np.full(
-        const.rx_antenna_num, const.rx_ants_y_position)
-    rx_ants_position = np.stack([rx_ants_x_position, rx_ants_y_position], 1)
+    # 2波モデルを使って受信点でのパワーを計算
+    # power_rxs.shape = (30, 30, 7)
+    rx_ants.get_distance_by_points(tx_ant1)
+    power_rx1 = rx_ants.receive_power(tx_ant1)
+    power_rx2 = rx_ants.receive_power(tx_ant2)
 
-    complex_signals = list()
+    power_rxs = power_rx1[:, :, cp.newaxis, cp.newaxis, :] + \
+        power_rx2[cp.newaxis, cp.newaxis, :, :, :]
 
-    for ant in tx_ants:
-        # ７個の各アンテナからantのとりうる位置30x30点に対する距離の取得 (distances.shape = (900, 7))
-        distances = rt.get_distance_by_points(
-            rx_ants_position, tx_ants, const.x_num, const.y_num)
-        # 距離を使って受信点での位相の計算．(phases.shape = (900, 7))
-        phases = rt.get_phase_from_distance(distances, const.lambda_0, tx_ants)
-        #print(max(phases/(2*np.pi)*360), min(phases/(2*np.pi)*360))
-        # 2波モデルを使って受信点でのパワーを計算．
-        # 距離を使って受信点での位相の計算．(power_rxs.shape = (900, 7))
-        power_rxs = rt.receive_voltage_gain(
-            distances, const.lambda_0, const.k, const.tx_antenna_hight, const.rx_antenna_hight)
-        # 振幅に変換 (power_rxs.shape = (900, 7))
-        amp_rxs = rt.dbm_to_v(power_rxs, 50)
-        # 振幅と位相から複素信号を計算 (power_rxs.shape= (900, 7))
-        complex_signal = np.sqrt(amp_rxs) * np.exp(1j * phases)
-        complex_signals.append(complex_signal)
+    # unit[dBm]
+    power_rxs = 10 * cp.log10(cp.abs(power_rxs)**2)
 
-    # complex_signals.shape -> (2, 900, 7)
-    complex_signals = np.array(complex_signals)
-    # 受信アンテナごとに重ね合わせ (complex_signals[0] ? complex_signals[1]).shape -> (810000, 7)
-    sum_signals = np.sum(complex_signals, 0)
-    return sum_signals
+    return power_rxs
 
 
 def plotter(test):
@@ -113,9 +89,17 @@ def plotter(test):
     plt.show()
 
 
+# シリアライズしたデータの順番
+# shape = (360, 30, 30, 30, 30, 7)
+# (phase, x1_position, y1_position, x2_position, y2_position, rx_power)
 if __name__ == '__main__':
     deg_start = sys.argv[1]
     deg_stop = sys.argv[2]
     print(f'processing {deg_start} from {deg_stop}')
-    for deg in tqdm(range(int(deg_start), int(deg_stop), 1)):
-        calc_two_antennas_vector(deg)
+    temp = cp.empty([int(deg_stop)+1, const.x_num, const.y_num, const.x_num,
+                     const.y_num, const.rx_antenna_num])
+    # rangeはendpointが含まれないので，stop+1している
+    for deg in tqdm(range(int(deg_start), int(deg_stop)+1, 1)):
+        temp[deg] = calc_antennas_vector(deg)
+
+    cp.savez("training_data", temp)
