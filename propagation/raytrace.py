@@ -37,7 +37,7 @@ class TX(Antennas):
 
 
 # 受信アンテナ
-# こっち側から電力を推定する（使わない機能になってしまった）
+# こっち側から電力を推定する
 class RX(Antennas):
 
     def __init__(self, x_position, y_position, z_position, freq, power, orientation, phase_offset):

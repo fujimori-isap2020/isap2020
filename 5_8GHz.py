@@ -52,7 +52,6 @@ def calc_antennas_vector(phase_diff):
 
     # 2波モデルを使って受信点でのパワーを計算
     # power_rxs.shape = (30, 30, 7)
-    rx_ants.get_distance_by_points(tx_ant1)
     power_rx1 = rx_ants.receive_power(tx_ant1)
     power_rx2 = rx_ants.receive_power(tx_ant2)
 
@@ -96,10 +95,9 @@ if __name__ == '__main__':
     deg_start = sys.argv[1]
     deg_stop = sys.argv[2]
     print(f'processing {deg_start} from {deg_stop}')
-    temp = cp.empty([int(deg_stop)+1, const.x_num, const.y_num, const.x_num,
-                     const.y_num, const.rx_antenna_num])
+    # temp = cp.empty([int(deg_stop)+1, const.x_num, const.y_num, const.x_num,
+    #                  const.y_num, const.rx_antenna_num])
     # rangeはendpointが含まれないので，stop+1している
     for deg in tqdm(range(int(deg_start), int(deg_stop)+1, 1)):
-        temp[deg] = calc_antennas_vector(deg)
-
-    cp.savez("training_data", temp)
+        cp.savez("traning_data/traning_data_"+str(deg),
+                 calc_antennas_vector(deg))
