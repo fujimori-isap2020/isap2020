@@ -101,3 +101,4 @@ if __name__ == '__main__':
     for deg in tqdm(range(int(deg_start), int(deg_stop)+1, 1)):
         cp.savez("traning_data/traning_data_"+str(deg),
                  calc_antennas_vector(deg))
+
