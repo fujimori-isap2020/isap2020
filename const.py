@@ -28,7 +28,7 @@ point_of_origin = 0
 phase_of_origin = 0
 
 # アンテナから出る電波の周波数 [Hz]
-freq = 5.80e9
+freq = 2.45e9
 # 光速 [m/s]
 c = 2.99792e8
 # 波長 [m]
@@ -52,7 +52,7 @@ dipole_element_le = lambda_0 / cp.pi * 10e3
 # 真空の誘電率[F/m]
 epsilon_0 = 8.854e-12
 # コンクリートの比誘電率（5.8GHzのときではなく1GHz時）
-epsilon_r = 6.5
+epsilon_r = 7.0 - 0.85j
 # 導電率[S/m]（1GHz）
 sigma = 0.1
 
