@@ -89,8 +89,8 @@ def plotter(test):
 
 
 # シリアライズしたデータの順番
-# shape = (360, 30, 30, 30, 30, 7)
-# (phase, x1_position, y1_position, x2_position, y2_position, rx_power)
+# shape = (30, 30, 30, 30, 7)
+# (x1_position, y1_position, x2_position, y2_position, rx_power)
 if __name__ == '__main__':
     deg_start = sys.argv[1]
     deg_stop = sys.argv[2]
@@ -101,4 +101,3 @@ if __name__ == '__main__':
     for deg in tqdm(range(int(deg_start), int(deg_stop)+1, 1)):
         cp.savez("traning_data/traning_data_"+str(deg),
                  calc_antennas_vector(deg))
-
