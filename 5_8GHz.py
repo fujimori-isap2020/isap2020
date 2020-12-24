@@ -99,5 +99,5 @@ if __name__ == '__main__':
     #                  const.y_num, const.rx_antenna_num])
     # rangeはendpointが含まれないので，stop+1している
     for deg in tqdm(range(int(deg_start), int(deg_stop)+1, 1)):
-        cp.savez("traning_data/traning_data_"+str(deg),
+        cp.savez("/tmp/training_data/training_data_"+str(deg),
                  calc_antennas_vector(deg))
