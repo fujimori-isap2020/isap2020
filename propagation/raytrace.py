@@ -29,7 +29,6 @@ class Antennas(object):
 
 
 # 送信アンテナ
-# 機能を増やしたかったが並列処理のため何もなし
 class TX(Antennas):
     def __init__(self, x_position, y_position, z_position, freq, power, orientation, phase_offset):
         super().__init__(x_position, y_position, z_position,

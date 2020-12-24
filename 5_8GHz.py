@@ -17,7 +17,7 @@
 # 20201223  メイン関数は小さく
 
 
-import cupy as cp
+import numpy as cp
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import sys
@@ -27,8 +27,8 @@ from propagation import raytrace as rt
 import const
 
 # Unified Memoryを使う
-pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
-cp.cuda.set_allocator(pool.malloc)
+# pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+# cp.cuda.set_allocator(pool.malloc)
 
 
 def calc_antennas_vector(phase_diff):
