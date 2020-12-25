@@ -17,7 +17,7 @@
 # 20201223  メイン関数は小さく
 
 
-import numpy as cp
+import cupy as cp
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import sys
