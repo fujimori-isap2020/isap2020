@@ -60,7 +60,7 @@ def calc_antennas_vector(phase_diff):
         power_rx2[cp.newaxis, cp.newaxis, :, :, :]
 
     # unit[dBm]
-    power_rxs = 10 * cp.log10(cp.abs(power_rx2**2))
+    power_rxs = 10 * cp.log10(cp.abs(power_rxs**2))
 
     return power_rxs
 
