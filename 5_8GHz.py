@@ -21,6 +21,7 @@ import cupy as cp
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import sys
+import os
 
 # self-made function
 from propagation import raytrace as rt
@@ -59,7 +60,7 @@ def calc_antennas_vector(phase_diff):
         power_rx2[cp.newaxis, cp.newaxis, :, :, :]
 
     # unit[dBm]
-    power_rxs = 10 * cp.log10(cp.abs(power_rxs)**2)
+    power_rxs = 10 * cp.log10(cp.abs(power_rx2**2))
 
     return power_rxs
 
@@ -97,6 +98,7 @@ if __name__ == '__main__':
     print(f'processing {deg_start} from {deg_stop}')
     # temp = cp.empty([int(deg_stop)+1, const.x_num, const.y_num, const.x_num,
     #                  const.y_num, const.rx_antenna_num])
+    os.makedirs("traning_data", exist_ok=True)
     # rangeはendpointが含まれないので，stop+1している
     for deg in tqdm(range(int(deg_start), int(deg_stop)+1, 1)):
         cp.savez("/tmp/training_data/training_data_"+str(deg),
